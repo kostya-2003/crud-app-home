@@ -1,20 +1,20 @@
 "use strict";
 
 const root = document.querySelector("#root");
+const url = "http://localhost:8888/todos";
 
 const UI = {
 	title: document.createElement("h1"),
-	subTitle : document.createElement("p"),
-	form : document.createElement("form"),
+	subTitle: document.createElement("p"),
+	form: document.createElement("form"),
 	screenBlock: document.createElement("div"),
 	screenInput: document.createElement("input"),
 	screenAddBtn: document.createElement("button"),
 	listsBlock: document.createElement("div"),
 
-	elementOptions () {
-		console.log("element");
+	elementOptions() {
 		this.title.textContent = "CRUD";
-		this.subTitle.textContent = "Asyn Application"
+		this.subTitle.textContent = "Asyn Application";
 
 		this.form.id = "app-form";
 		this.screenBlock.id = "screenBlock";
@@ -25,130 +25,145 @@ const UI = {
 		this.listsBlock.id = "listBlock";
 	},
 
-	appendElements () {
+	appendElements() {
 		root.append(this.title, this.subTitle, this.form, this.listsBlock);
 		this.form.append(this.screenBlock);
 		this.screenBlock.append(this.screenInput, this.screenAddBtn);
 	},
 
-	start () {
+	toHTML(id, value, isComplete) {
+		if(isComplete){
+			this.listsBlock.innerHTML += `
+			<div class="listsBlockItem">
+				<div class="listsBlockItemContent">
+					<span>${id}</span>
+					<input class="disabled" type="text" value="${value}" readonly>
+				</div>
+				<div class="buttons">
+					<button class="complitedBtn">Finally</button>
+					<button class="removeBtn">Remove</button>
+					<button class="editBtn">Edit</button>
+					<button class="saveBtn">Save</button>
+				</div>
+			</div>
+		`;
+		}else{
+			this.listsBlock.innerHTML += `
+			<div class="listsBlockItem">
+				<div class="listsBlockItemContent">
+					<span>${id}</span>
+					<input type="text" value="${value}" readonly>
+				</div>
+				<div class="buttons">
+					<button class="complitedBtn">End Work</button>
+					<button class="removeBtn">Remove</button>
+					<button class="editBtn">Edit</button>
+					<button class="saveBtn">Save</button>
+				</div>
+			</div>
+		`;
+		}
+	},
+
+	start() {
 		this.elementOptions();
 		this.appendElements();
 	}
-}
+};
 
 UI.start();
-/* 
-	Ստեղծել 4 ֆունցկիա հետևյալ անուններով՝ GET, POST, PUT, DELETE ու անել այնպես
-	որպեսզի էդ 4 ֆունկցիաները առանց որևիցէ խնդրի աշխատեն մեր տվյալների բազայի ու
-	ամենակարևորը մեր UI-ի հետ
 
-	Հ․Գ․ CSS-ում փոխել եմ բոլոր կլասներն ու այդիները, որպեսզի հին կոդի հետ չաշխատեն
-*/
+const { form, screenInput } = UI;
 
-const URL = "http://localhost:8888/todos/";
-
-function GET(){
-	fetch(URL)
-	.then(data => data.json())
-	.then(data => data.map((data) => {
-		return createHTMLElement(data);
-	}))
-}
-
-GET()
-
-function FetchApi(){
-	fetch(URL)
-	.then(data => data.json())
-	.then(data => changeDB(data))
-}
-
-FetchApi();
-
-function createHTMLElement({title,id}){
-	return UI.listsBlock.innerHTML += `
-		<div class="listsBlockItem">
-			<div class="listsBlockItemContent">
-				<span >${id}</span>
-				<input type="text" value="${title}" readonly>
-			</div>
-			<div class="buttons">
-				<button class="removeBtn">Remove</button>
-				<button	class="editBtn" data-ed>Edit</button>
-				<button class="saveBtn" data-sv>Save</button>
-			</div>
-		</div>
-	`;
-}
-	
-
-function POST(){
-	UI.form.addEventListener("submit", (e) => {
+function POST() {
+	form.addEventListener("submit", async (e) => {
 		e.preventDefault();
-		const val = UI.screenInput.value.trim();
-		if (val !== "") {
-			fetch(URL, {
+
+		if (screenInput.value.trim() !== "") {
+			await fetch(url, {
 				method: "POST",
 				headers: {
-					"content-type":"application/json"
+					"content-type": "application/json"
 				},
-				body: JSON.stringify({title: val})
+				body: JSON.stringify({ title: screenInput.value.trim(), isComplete: false })
 			});
 		}
-		this.reset();
-	})
+
+		e.target.reset();
+	});
 }
 
 POST();
 
-function changeDB (data, method) {
-	const btnArray = document.querySelectorAll(".buttons")
-    const removeBtn = document.querySelectorAll(".removeBtn");
-    const editBtns = document.querySelectorAll(".editBtn");
-	const saveBtns = document.querySelectorAll(".saveBtn");
+async function GET() {
+	return await fetch(url)
+		.then(data => data.json())
+		.then(data => data.forEach(obj => UI.toHTML(obj.id, obj.title, obj.isComplete)))
+		.then(() => {
+			PUT(
+				document.querySelectorAll(".editBtn"),
+				document.querySelectorAll(".saveBtn"),
+				document.querySelectorAll(".listsBlockItemContent"),
+				
+			);
+			DELETE(document.querySelectorAll(".removeBtn"));
+			isCompleted(document.querySelectorAll(".complitedBtn"),);
+		})
+}
 
-    removeBtn.forEach(btn => {
-        btn.addEventListener("click", () =>{
-            method = "Delete"
-        })
-    });
-    
-    editBtns.forEach((btn, index) => {
-		btn.addEventListener("click", function () {
-			const input = this.parentElement.previousElementSibling.lastElementChild;
+GET();
 
-			input.classList.add("edit");
-			input.removeAttribute("readonly");
-
-			saveBtns.forEach((saveBtn, saveBtnIndex) => {
-				if (index === saveBtnIndex) {
-					saveBtn.style.display = "inline-block";
-					btn.style.display = "none";
-                    
-				}
-                saveBtn.addEventListener("click", () => {
-                    method = "PUT";
-                })
-			}) 
-		});
+function PUT(editBtnArray, saveBtnArray, content) {
+	editBtnArray.forEach((editBtn, index) => {
+		editBtn.addEventListener("click", (e) => {
+			const input = content[index].children[1];
+			const fakeID = parseInt(content[index].children[0].textContent);
+			if(content[index].children[1].classList[0] !== "disabled"){
+				editBtn.style.display = "none";
+				saveBtnArray[index].style.display = "inline-block";
+				input.classList.add("edit");
+				input.removeAttribute("readonly");
+			}
+			saveBtnArray[index].addEventListener("click", async () => {
+				
+				await fetch(`${url}/${fakeID}`, {
+					method: "PUT",
+					headers: {
+						"content-type": "application/json"
+					},
+					body: JSON.stringify({ title: input.value.trim(), isComplete: input.classList[0] === "disabled" ? true : false})
+				});
+			});
+		})
 	});
+}
 
-	btnArray.forEach(btn => {
-		btn.addEventListener("click", function () {	
-			data.forEach(todo => {
-				const fakeId = btn.previousElementSibling.firstElementChild.textContent;
-				const forEddited = btn.previousElementSibling.lastElementChild;
-				if (parseInt(fakeId) === todo.id) {
-					fetch(`${URL}${todo.id}`, {
-						method: method,
-						headers: {
-							"content-type":"application/json"
-						},
-						body: method === "PUT" ? JSON.stringify({title: forEddited.value.trim()}) : ""
-					});
-				}
+function DELETE(removeBtn) {
+	removeBtn.forEach(btn => {
+		btn.addEventListener("click", async () => {
+			const fakeID = parseInt(btn.parentElement.previousElementSibling.firstElementChild.textContent);
+			btn.parentElement.parentElement.remove();
+
+			await fetch(`${url}/${fakeID}`, {
+				method: "DELETE"
 			})
 		});
 	});
 }
+
+function isCompleted(complitedBtn) {
+	complitedBtn.forEach(btn => {
+		btn.addEventListener("click", async (e) => {
+			const fakeID = parseInt(btn.parentElement.previousElementSibling.firstElementChild.textContent);
+			const input = e.target.parentElement.parentElement.children[0].children[1];
+			await fetch(`${url}/${fakeID}`, {
+				method: "PUT",
+				headers: {
+					"content-type": "application/json"
+				},
+				body: JSON.stringify({title: input.value.trim(), isComplete: true })
+			});
+		});
+	});
+}
+

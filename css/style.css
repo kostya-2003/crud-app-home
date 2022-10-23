@@ -57,6 +57,11 @@ body {
 	border-radius: 5px;
 }
 
+#root #listBlock .listsBlockItem .listsBlockItemContent input.disabled{
+	text-decoration: line-through;
+	color: #038282;
+}
+
 #root #listBlock .listsBlockItem .listsBlockItemContent input.edit {
 	border-color: #ccc;
 }
@@ -72,12 +77,15 @@ body {
 }
 
 #root #listBlock .listsBlockItem .buttons .removeBtn {
-	background: #d00100;
+	background: #961b1b;
 }
 
+#root #listBlock .listsBlockItem .buttons .complitedBtn {
+	background: #038282;
+}
 
 #root #listBlock .listsBlockItem .buttons .editBtn {
-	background: #ffc000;
+	background: #9c7a13;
 }
 
 #root #listBlock .listsBlockItem .buttons .saveBtn {
@@ -92,7 +100,9 @@ body {
 #root #listBlock .listsBlockItem .buttons .editBtn:hover {
 	background: #efb403;
 }
-
+#root #listBlock .listsBlockItem .buttons .complitedBtn:hover {
+	background: #075f5f;
+}
 #root #listBlock .listsBlockItem .buttons .saveBtn:hover {
 	background: #c311e2;
 }
